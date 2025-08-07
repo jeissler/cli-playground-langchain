@@ -1,21 +1,22 @@
 import chalk from 'chalk'
 import { promptUser, printResponse, promptSelect } from './cli.js'
-import { chat, getKnowUsers, setUserId } from './chat.js'
+import { chat, getKnowUsers, setUserId, setLanguage } from './chat.js'
 
 async function run() {
   console.log('\nBrane CLI\nType "exit" to quit or "CTL+C"\n')
 
   while (true) {
     const input = await promptUser()
+    const cmd = input.toLowerCase().trim()
 
-    if (input.toLowerCase() === 'exit') {
+    if (cmd === 'exit') {
       console.log(chalk.yellow('Exiting...'))
       process.exit(0)
 
       break
     }
 
-    if (input.toLowerCase() === 'users') {
+    if (cmd === 'users') {
       const users = getKnowUsers()
       const select = await promptSelect('Select a user:', users)
 
@@ -24,9 +25,19 @@ async function run() {
       continue
     }
 
-    if (input.toLowerCase() === 'new user') {
+    if (cmd === 'new') {
       const id = setUserId()
       console.log(chalk.green(`New user created with ID: ${id}`))
+
+      continue
+    }
+
+    if (cmd === 'lang') {
+      const languages = ['english', 'spanish', 'french', 'german', 'portuguese']
+      const selectedLang = await promptSelect('Select a language:', languages)
+
+      setLanguage(selectedLang)
+      console.log(chalk.green(`Language set to: ${selectedLang}`))
 
       continue
     }
