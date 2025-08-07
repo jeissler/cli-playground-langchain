@@ -9,6 +9,7 @@ import {
   MemorySaver,
   Annotation
 } from '@langchain/langgraph'
+import { HumanMessage, trimMessages } from '@langchain/core/messages'
 import { promptTemplate } from './promptTemplate.js'
 
 let language = 'english'
@@ -23,8 +24,21 @@ const GraphAnnotation = Annotation.Root({
   language: Annotation()
 })
 
+const trimmer = trimMessages({
+  maxTokens: 10,
+  strategy: 'last',
+  tokenCounter: (msgs) => msgs.length,
+  includeSystem: true,
+  allowPartial: false,
+  startOn: 'human'
+})
+
 const callModel = async (state) => {
-  const prompt = await promptTemplate.invoke(state)
+  const trimmedMessage = await trimmer.invoke(state.messages)
+  const prompt = await promptTemplate.invoke({
+    messages: trimmedMessage,
+    language: state.language
+  })
   const response = await llm.invoke(prompt)
   return { messages: [response] }
 }
@@ -52,7 +66,11 @@ export function setLanguage(lang) {
   language = lang
 }
 
-export async function chat(input) {
-  const output = await app.invoke({ messages: input, language }, config)
+export async function chat(msg) {
+  const input = {
+    messages: [new HumanMessage(msg)],
+    language
+  }
+  const output = await app.invoke(input, config)
   return output.messages[output.messages.length - 1].content.trim()
 }
