@@ -1,5 +1,6 @@
 import chalk from 'chalk'
 import { promptUser, printResponse } from './cli.js'
+import { chat } from './chat.js'
 
 async function run() {
   console.log('\nBrane CLI\nType "exit" to quit or "CTL+C"\n')
@@ -14,7 +15,7 @@ async function run() {
       break
     }
 
-    const response = `Input was: ${input}`
+    const response = await chat(input)
 
     printResponse(response)
   }
