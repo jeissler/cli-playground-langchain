@@ -1,6 +1,7 @@
+import 'dotenv/config'
 import chalk from 'chalk'
 import { promptUser, printResponse, promptSelect } from './cli.js'
-import { chat, getKnowUsers, setUserId, setLanguage } from './chat.js'
+import { chat, getKnowUsers, setUserId, setLanguage } from './chat/index.js'
 
 async function run() {
   console.log('\nBrane CLI\nType "exit" to quit or "CTL+C"\n')

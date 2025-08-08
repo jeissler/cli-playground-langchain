@@ -1,5 +1,3 @@
-import 'dotenv/config'
-import { v4 as uuidv4 } from 'uuid'
 import { ChatOpenAI } from '@langchain/openai'
 import {
   START,
@@ -9,12 +7,12 @@ import {
   MemorySaver,
   Annotation
 } from '@langchain/langgraph'
-import { HumanMessage, trimMessages } from '@langchain/core/messages'
-import { promptTemplate } from './promptTemplate.js'
+import { HumanMessage } from '@langchain/core/messages'
+import { promptTemplate } from './prompt.js'
+import { trimmer } from './utils.js'
+import { getConfig, getLanguage } from './session.js'
 
-let language = 'english'
-const defaultId = uuidv4()
-const config = { configurable: { thread_id: defaultId } }
+// Setup LLM
 const llm = new ChatOpenAI({
   model: 'gpt-4o',
   temperature: 0
@@ -24,15 +22,7 @@ const GraphAnnotation = Annotation.Root({
   language: Annotation()
 })
 
-const trimmer = trimMessages({
-  maxTokens: 10,
-  strategy: 'last',
-  tokenCounter: (msgs) => msgs.length,
-  includeSystem: true,
-  allowPartial: false,
-  startOn: 'human'
-})
-
+// Core node
 const callModel = async (state) => {
   const trimmedMessage = await trimmer.invoke(state.messages)
   const prompt = await promptTemplate.invoke({
@@ -43,34 +33,20 @@ const callModel = async (state) => {
   return { messages: [response] }
 }
 
+// Graph setup
+const memory = new MemorySaver()
 const workflow = new StateGraph(GraphAnnotation)
   .addNode('model', callModel)
   .addEdge(START, 'model')
   .addEdge('model', END)
-
-const knownUserIds = [defaultId]
-const memory = new MemorySaver()
 const app = workflow.compile({ checkpointer: memory })
 
-export function setUserId(id = uuidv4()) {
-  config.configurable.user_id = id
-  if (!knownUserIds.includes(id)) knownUserIds.push(id)
-  return id
-}
-
-export function getKnowUsers() {
-  return [...knownUserIds]
-}
-
-export function setLanguage(lang) {
-  language = lang
-}
-
+// Main method
 export async function chat(msg) {
   const input = {
     messages: [new HumanMessage(msg)],
-    language
+    language: getLanguage()
   }
-  const output = await app.invoke(input, config)
+  const output = await app.invoke(input, getConfig())
   return output.messages[output.messages.length - 1].content.trim()
 }
