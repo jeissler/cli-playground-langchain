@@ -1,7 +1,16 @@
 import 'dotenv/config'
 import chalk from 'chalk'
 import { promptUser, printResponse, promptSelect } from './cli.js'
-import { chat, getHistory, getKnowUsers, setUserId, setLanguage } from './chat/index.js'
+import {
+  addDocs,
+  chat,
+  fetchDocs,
+  getHistory,
+  getKnowUsers,
+  setUserId,
+  setLanguage
+} from './chat/index.js'
+import { extractLinks } from './chat/utils.js'
 
 async function run() {
   console.log('\nBrane CLI\nType "exit" to quit or "CTL+C"\n')
@@ -50,6 +59,20 @@ async function run() {
         console.log(chalk.yellow('No chat history found.'))
       } else {
         messages.forEach((msg) => console.log(chalk.cyan(msg.content)))
+      }
+
+      continue
+    }
+
+    if (cmd.includes('@')) {
+      const urlRegex = /@https?:\/\/[^\s]+/g
+      const links = cmd.match(urlRegex)?.map((link) => link.slice(1)) || []
+      const docs = await fetchDocs(links)
+
+      if (docs.length) {
+        await addDocs(docs)
+        console.log(chalk.green('Loaded into memory:'))
+        links.forEach((link) => console.log(chalk.green(`${link}\n`)))
       }
 
       continue

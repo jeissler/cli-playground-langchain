@@ -12,7 +12,6 @@ import { HumanMessage } from '@langchain/core/messages'
 import { promptTemplate } from './prompt.js'
 import { trimmer } from './utils.js'
 import { getConfig, getLanguage } from './session.js'
-import { allSplits } from './docLoader.js'
 
 // Setup LLM
 const llm = new ChatOpenAI({
@@ -26,7 +25,6 @@ const memory = new MemorySaver()
 // RAG storage
 const embeddings = new OpenAIEmbeddings({ model: 'text-embedding-3-large' })
 const vectorStore = new MemoryVectorStore(embeddings)
-await vectorStore.addDocuments(allSplits)
 
 // App state
 const StateAnnotation = Annotation.Root({
@@ -75,4 +73,8 @@ export async function getHistory() {
   const checkpoint = await memory.get(getConfig())
   const messages = checkpoint?.channel_values?.messages || []
   return messages.filter((msg) => msg instanceof HumanMessage)
+}
+
+export async function addDocs(docs) {
+  if (docs.length) await vectorStore.addDocuments(docs)
 }
