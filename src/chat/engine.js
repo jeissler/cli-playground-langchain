@@ -1,54 +1,74 @@
-import { ChatOpenAI } from '@langchain/openai'
+import { ChatOpenAI, OpenAIEmbeddings } from '@langchain/openai'
 import {
   START,
   END,
-  MessagesAnnotation,
   StateGraph,
   MemorySaver,
-  Annotation
+  Annotation,
+  MessagesAnnotation
 } from '@langchain/langgraph'
+import { MemoryVectorStore } from 'langchain/vectorstores/memory'
 import { HumanMessage } from '@langchain/core/messages'
 import { promptTemplate } from './prompt.js'
 import { trimmer } from './utils.js'
 import { getConfig, getLanguage } from './session.js'
+import { allSplits } from './docLoader.js'
 
 // Setup LLM
 const llm = new ChatOpenAI({
   model: 'gpt-4o',
   temperature: 0
 })
-const GraphAnnotation = Annotation.Root({
+
+// User/message memory store
+const memory = new MemorySaver()
+
+// RAG storage
+const embeddings = new OpenAIEmbeddings({ model: 'text-embedding-3-large' })
+const vectorStore = new MemoryVectorStore(embeddings)
+await vectorStore.addDocuments(allSplits)
+
+// App state
+const StateAnnotation = Annotation.Root({
   ...MessagesAnnotation.spec,
+  question: Annotation(),
+  context: Annotation(),
+  answer: Annotation(),
   language: Annotation()
 })
 
-// Core node
-const callModel = async (state) => {
-  const trimmedMessage = await trimmer.invoke(state.messages)
-  const prompt = await promptTemplate.invoke({
-    messages: trimmedMessage,
-    language: state.language
-  })
-  const response = await llm.invoke(prompt)
-  return { messages: [response] }
+// RAG pipeline
+const retrieve = async (state) => {
+  const docs = await vectorStore.similaritySearch(state.question)
+  return { context: docs }
 }
 
-// Graph setup
-const memory = new MemorySaver()
-const workflow = new StateGraph(GraphAnnotation)
-  .addNode('model', callModel)
-  .addEdge(START, 'model')
-  .addEdge('model', END)
-const app = workflow.compile({ checkpointer: memory })
-
-// Main method
-export async function chat(msg) {
-  const input = {
-    messages: [new HumanMessage(msg)],
+const generate = async (state) => {
+  const trimmedMessages = await trimmer.invoke(state.messages)
+  const content = state.context.map((doc) => doc.pageContent).join('\n')
+  const messages = await promptTemplate.invoke({
+    messages: trimmedMessages,
+    question: state.question,
+    context: content,
     language: getLanguage()
-  }
-  const output = await app.invoke(input, getConfig())
-  return output.messages[output.messages.length - 1].content.trim()
+  })
+  const res = await llm.invoke(messages)
+  return { answer: res.content }
+}
+
+// Compile app
+const graph = new StateGraph(StateAnnotation)
+  .addNode('retrieve', retrieve)
+  .addNode('generate', generate)
+  .addEdge(START, 'retrieve')
+  .addEdge('retrieve', 'generate')
+  .addEdge('generate', END)
+const app = graph.compile({ checkpointer: memory })
+
+// Public methods
+export async function chat(msg) {
+  const res = await app.invoke({ question: msg, messages: [new HumanMessage(msg)] }, getConfig())
+  return res.answer
 }
 
 export async function getHistory() {
