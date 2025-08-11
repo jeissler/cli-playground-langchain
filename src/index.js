@@ -65,8 +65,7 @@ async function run() {
     }
 
     if (cmd.includes('@')) {
-      const urlRegex = /@https?:\/\/[^\s]+/g
-      const links = cmd.match(urlRegex)?.map((link) => link.slice(1)) || []
+      const links = extractLinks(cmd)
       const docs = await fetchDocs(links)
 
       if (docs.length) {

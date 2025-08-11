@@ -8,3 +8,14 @@ export const trimmer = trimMessages({
   allowPartial: false,
   startOn: 'human'
 })
+
+export function extractLinks(link) {
+  const urlRegex = /@(?:https?:\/\/)?[^\s]+/gi
+  return (link.match(urlRegex) || []).map((link) => {
+    let clean = link.slice(1) // remove '@'
+    if (!/^https?:\/\//i.test(clean)) {
+      clean = `https://${clean}`
+    }
+    return clean
+  })
+}
