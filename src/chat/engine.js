@@ -50,3 +50,9 @@ export async function chat(msg) {
   const output = await app.invoke(input, getConfig())
   return output.messages[output.messages.length - 1].content.trim()
 }
+
+export async function getHistory() {
+  const checkpoint = await memory.get(getConfig())
+  const messages = checkpoint?.channel_values?.messages || []
+  return messages.filter((msg) => msg instanceof HumanMessage)
+}

@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import chalk from 'chalk'
 import { promptUser, printResponse, promptSelect } from './cli.js'
-import { chat, getKnowUsers, setUserId, setLanguage } from './chat/index.js'
+import { chat, getHistory, getKnowUsers, setUserId, setLanguage } from './chat/index.js'
 
 async function run() {
   console.log('\nBrane CLI\nType "exit" to quit or "CTL+C"\n')
@@ -39,6 +39,18 @@ async function run() {
 
       setLanguage(selectedLang)
       console.log(chalk.green(`Language set to: ${selectedLang}`))
+
+      continue
+    }
+
+    if (cmd === 'history') {
+      const messages = await getHistory()
+
+      if (messages.length === 0) {
+        console.log(chalk.yellow('No chat history found.'))
+      } else {
+        messages.forEach((msg) => console.log(chalk.cyan(msg.content)))
+      }
 
       continue
     }
