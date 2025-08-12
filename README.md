@@ -1,7 +1,6 @@
 # 🧪 LangChain CLI Playground
 
-A tiny, experimental CLI for exploring **LangChain** concepts in a hands-on way.  
-Think of it as a sandbox for testing ideas, chaining nodes and seeing how prompts, memory and RAG all work together. Also connected to LangGraph for tool call observability. 
+A tiny, experimental CLI for exploring **LangChain** concepts in a hands-on way. This is a sandbox for testing ideas, chaining nodes and seeing how prompts, memory and RAG all work together. Also connected to LangGraph for tool call observability. 
 
 ## ✨ Features
 
