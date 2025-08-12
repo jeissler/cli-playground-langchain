@@ -33,9 +33,16 @@ const StateAnnotation = Annotation.Root({
   context: Annotation(),
   answer: Annotation(),
   language: Annotation()
+  // TODO: add original query, reformulated query?
 })
 
 // RAG pipeline
+const reformulate = async (state) => {
+  const prompt = `Reframe the query so you can best answer it: "${state.question}"`
+  const res = await llm.invoke(prompt)
+  return { question: res.content.trim() }
+}
+
 const retrieve = async (state) => {
   const docs = await vectorStore.similaritySearch(state.question)
   return { context: docs }
@@ -56,9 +63,11 @@ const generate = async (state) => {
 
 // Compile app
 const graph = new StateGraph(StateAnnotation)
+  .addNode('reformulate', reformulate)
   .addNode('retrieve', retrieve)
   .addNode('generate', generate)
-  .addEdge(START, 'retrieve')
+  .addEdge(START, 'reformulate')
+  .addEdge('reformulate', 'retrieve')
   .addEdge('retrieve', 'generate')
   .addEdge('generate', END)
 const app = graph.compile({ checkpointer: memory })
