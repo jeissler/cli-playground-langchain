@@ -33,16 +33,22 @@ const StateAnnotation = Annotation.Root({
   context: Annotation(),
   answer: Annotation(),
   language: Annotation()
-  // TODO: add original query, reformulated query?
 })
 
-// RAG pipeline
+// Agent augmentors
 const reformulate = async (state) => {
   const prompt = `Reframe the query so you can best answer it: "${state.question}"`
   const res = await llm.invoke(prompt)
   return { question: res.content.trim() }
 }
 
+const compose = async (state) => {
+  const prompt = `Add short interesting facts about fish randomly to the response: ${state.answer}`
+  const res = await llm.invoke(prompt)
+  return { answer: res.content.trim() }
+}
+
+// RAG pipeline
 const retrieve = async (state) => {
   const docs = await vectorStore.similaritySearch(state.question)
   return { context: docs }
@@ -58,18 +64,20 @@ const generate = async (state) => {
     language: getLanguage()
   })
   const res = await llm.invoke(messages)
-  return { answer: res.content }
+  return { answer: res.content.trim() }
 }
 
 // Compile app
 const graph = new StateGraph(StateAnnotation)
   .addNode('reformulate', reformulate)
   .addNode('retrieve', retrieve)
+  .addNode('compose', compose)
   .addNode('generate', generate)
   .addEdge(START, 'reformulate')
   .addEdge('reformulate', 'retrieve')
   .addEdge('retrieve', 'generate')
-  .addEdge('generate', END)
+  .addEdge('generate', 'compose')
+  .addEdge('compose', END)
 const app = graph.compile({ checkpointer: memory })
 
 // Public methods
