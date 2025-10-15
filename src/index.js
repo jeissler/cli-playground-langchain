@@ -77,8 +77,6 @@ async function run() {
       } catch (e) {
         console.log(chalk.red(`${e.message} for ${cmd.substring(1)}`))
       }
-
-      continue
     }
 
     const response = await chat(input)
