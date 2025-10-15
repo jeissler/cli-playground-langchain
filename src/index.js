@@ -65,13 +65,17 @@ async function run() {
     }
 
     if (cmd.includes('@')) {
-      const links = extractLinks(cmd)
-      const docs = await fetchDocs(links)
+      try {
+        const links = extractLinks(cmd)
+        const docs = await fetchDocs(links)
 
-      if (docs.length) {
-        await addDocs(docs)
-        console.log(chalk.green('Loaded into memory:'))
-        links.forEach((link) => console.log(chalk.green(`${link}\n`)))
+        if (docs.length) {
+          await addDocs(docs)
+          console.log(chalk.green('Loaded into memory:'))
+          links.forEach((link) => console.log(chalk.green(`${link}\n`)))
+        }
+      } catch (e) {
+        console.log(chalk.red(`${e.message} for ${cmd.substring(1)}`))
       }
 
       continue
