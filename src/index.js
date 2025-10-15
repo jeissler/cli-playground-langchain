@@ -13,7 +13,7 @@ import {
 import { extractLinks } from './chat/utils.js'
 
 async function run() {
-  console.log('\nBrane CLI\nType "exit" to quit or "CTL+C"\n')
+  console.log(chalk.green.bold('\nBrane CLI\nType "exit" to quit or "CTL+C"\n'))
 
   while (true) {
     const input = await promptUser()
@@ -78,6 +78,8 @@ async function run() {
         console.log(chalk.red(`${e.message} for ${cmd.substring(1)}`))
       }
     }
+
+    console.log(chalk.cyan('Thinking...'), '\n')
 
     const response = await chat(input)
 
