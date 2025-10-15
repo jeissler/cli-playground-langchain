@@ -39,6 +39,8 @@ async function run() {
       const id = setUserId()
       console.log(chalk.green(`New user created with ID: ${id}`))
 
+      setLanguage('english')
+
       continue
     }
 
